@@ -1,0 +1,24 @@
+[build-system]
+requires = ["maturin>=1.9,<2"]
+build-backend = "maturin"
+
+[project]
+name = "joule-profiler"
+description = "Python bindings for Joule Profiler"
+readme = "README.md"
+license = "MIT"
+requires-python = ">=3.8"
+dynamic = ["version"]
+
+[project.urls]
+"Joule Profiler" = "https://github.com/joule-profiler/joule-profiler"
+Documentation = "https://joule-profiler.github.io/"
+
+[tool.maturin]
+module-name = "joule_profiler._core"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[tool.uv]
+cache-keys = [{ file = "pyproject.toml" }, { file = "Cargo.toml" }, { file = "src/**/*.rs" }]
