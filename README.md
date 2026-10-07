@@ -1,6 +1,6 @@
-# joule-profiler for Python
+# Python bindings for Joule Profiler
 
-Python bindings for [joule-profiler](https://github.com/joule-profiler/joule-profiler), written in Rust with PyO3. Measure the energy and resources a program uses, phase by phase, with the sources implemented by joule-profiler: RAPL, perf events, procfs, cgroups, NVML and AMD SMI.
+Python bindings for [Joule Profiler](https://github.com/joule-profiler/joule-profiler), written in Rust with PyO3. Measure the energy and resources a program uses, phase by phase, with the sources implemented by Joule Profiler: RAPL, perf events, procfs, cgroups, NVML and AMD SMI.
 
 There are two ways to profile:
 
@@ -10,7 +10,7 @@ There are two ways to profile:
 ## Links
 
 - Joule Profiler: [github.com/joule-profiler/joule-profiler](https://github.com/joule-profiler/joule-profiler)
-- Documentation: [joule-profiler.github.io](https://joule-profiler.github.io), including the [sources and their settings](https://joule-profiler.github.io/sources/overview.html)
+- Documentation: [joule-profiler.github.io](https://joule-profiler.github.io)
 
 ## Build, test, run
 
@@ -33,8 +33,8 @@ cargo test
 ### Run
 
 ```bash
-python examples/command.py
-python examples/session.py
+python3 examples/command.py
+python3 examples/session.py
 ```
 
 ## Examples
@@ -73,7 +73,7 @@ if __name__ == "__main__":
     print(f"\nexit code {run.summary.exit_code}, {run.summary.duration_ms} ms")
 ```
 
-### Profiling the already running program itself: `examples/session.py`
+### Profiling an already running program itself: `examples/session.py`
 
 ```python
 import time
@@ -114,3 +114,4 @@ if __name__ == "__main__":
 
     print(session.summary)
 ```
+
