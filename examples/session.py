@@ -16,12 +16,14 @@ if __name__ == "__main__":
     )
 
     with profiler.session() as session:
+        session.poll() # return None
         numbers = load()
+        # session.poll() # would return the first phase
         solve(numbers)
         session.phase("rest")
         time.sleep(0.2)
 
-    for phase in session:
+    for phase in session.phases:
         metrics = {
             f"{metric.name}": f"{metric.value} {metric.unit}"
             for source in phase.sources

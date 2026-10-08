@@ -5,7 +5,7 @@ Python bindings for [Joule Profiler](https://github.com/joule-profiler/joule-pro
 There are two ways to profile:
 
 - `JouleProfiler.profile` runs a command, and starts a new phase each time the command prints a token.
-- `JouleProfiler.session` measures the running Python program itself. A new phase starts at each `session.phase(...)` or `joule_profiler.phase(...)`.
+- `JouleProfiler.session` measures the running Python program itself. A new phase starts at each `session.phase(...)` or `joule_profiler.phase(...)`. `session.phases` waits for each phase to end, `session.poll()` returns a phase that already ended, or `None` without waiting.
 
 ## Links
 
@@ -94,12 +94,14 @@ if __name__ == "__main__":
     )
 
     with profiler.session() as session:
+        session.poll() # return None
         numbers = load()
+        # session.poll() # would return the first phase
         solve(numbers)
         session.phase("rest")
         time.sleep(0.2)
 
-    for phase in session:
+    for phase in session.phases:
         metrics = {
             f"{metric.name}": f"{metric.value} {metric.unit}"
             for source in phase.sources

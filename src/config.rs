@@ -146,9 +146,9 @@ where
 }
 
 #[derive(Debug, Default)]
-pub struct Settings(Table);
+pub struct ConfigTable(Table);
 
-impl Settings {
+impl ConfigTable {
     pub fn read(path: &Path) -> Result<Self> {
         let text = fs::read_to_string(path).map_err(|error| Error::Read(path.into(), error))?;
         let table = toml::from_str(&text).map_err(|error| Error::Parse(path.into(), error))?;
@@ -185,12 +185,12 @@ impl Settings {
 mod tests {
     use super::*;
 
-    fn settings(values: &[(&str, Value)]) -> Settings {
-        let mut settings = Settings::default();
+    fn config_table(values: &[(&str, Value)]) -> ConfigTable {
+        let mut config_table = ConfigTable::default();
         for (key, value) in values {
-            settings.set(key, value.clone()).unwrap();
+            config_table.set(key, value.clone()).unwrap();
         }
-        settings
+        config_table
     }
 
     fn names(sources: &[(&str, Build, Option<Value>)]) -> Vec<String> {
@@ -202,7 +202,8 @@ mod tests {
 
     #[test]
     fn a_dotted_key_sets_a_nested_value() {
-        let Settings(table) = settings(&[("sources.rapl.sockets", Value::Array(vec![0.into()]))]);
+        let ConfigTable(table) =
+            config_table(&[("sources.rapl.sockets", Value::Array(vec![0.into()]))]);
 
         assert_eq!(
             table["sources"]["rapl"]["sockets"],
@@ -212,19 +213,23 @@ mod tests {
 
     #[test]
     fn a_misspelled_key_or_a_key_through_a_value_is_refused() {
-        let error = settings(&[("profiler.defr", true.into())])
+        let error = config_table(&[("profiler.defr", true.into())])
             .resolve()
             .unwrap_err();
         assert!(error.to_string().contains("defr"), "{error}");
 
-        let mut settings = settings(&[("injector.use_root", true.into())]);
-        assert!(settings.set("injector.use_root.more", 1.into()).is_err());
-        assert!(settings.set("profiler..defer", true.into()).is_err());
+        let mut config_table = config_table(&[("injector.use_root", true.into())]);
+        assert!(
+            config_table
+                .set("injector.use_root.more", 1.into())
+                .is_err()
+        );
+        assert!(config_table.set("profiler..defer", true.into()).is_err());
     }
 
     #[test]
     fn named_sources_come_first_then_the_configured_ones_and_rapl_by_default() {
-        let config = settings(&[
+        let config = config_table(&[
             ("sources.nvml.minimal", false.into()),
             ("sources.perf_event.events", Value::Array(Vec::new())),
         ])
@@ -246,7 +251,7 @@ mod tests {
             .unwrap_err();
         assert!(error.to_string().contains("`nope`"), "{error}");
 
-        let config = settings(&[("sources.rpl.unit", "joule".into())])
+        let config = config_table(&[("sources.rpl.unit", "joule".into())])
             .resolve()
             .unwrap();
         assert!(config.check_sources(&[]).is_err());

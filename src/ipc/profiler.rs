@@ -13,7 +13,7 @@ use joule_profiler_core::phase::{PhaseInfo, SourceMetrics, Summary};
 use joule_profiler_core::profiler::JouleProfiler;
 use joule_profiler_core::schema::Schema;
 
-use crate::ipc::{PHASE_DECLARATION_MESSAGE, IpcError, Request, STARTED_MESSAGE, Values, Written};
+use crate::ipc::{IpcError, PHASE_DECLARATION_MESSAGE, Request, STARTED_MESSAGE, Values, Written};
 
 /// The profiler's end of a session.
 pub struct IpcInjector {
@@ -245,10 +245,10 @@ mod tests {
     use joule_profiler_core::source::Source;
     use joule_profiler_core::unit::MetricUnit;
 
+    use crate::ipc::program::{IpcSession, Results};
     use crate::ipc::{PhaseValues, Received};
-use crate::ipc::program::{Results, IpcSession};
 
-use super::*;
+    use super::*;
 
     #[derive(Default)]
     struct Ticks(u64);

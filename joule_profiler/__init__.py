@@ -109,8 +109,13 @@ class Session(ContextDecorator):
             )
         self._inner.phase(name)
 
-    def __iter__(self) -> Iterator[Phase]:
-        return self._inner.run.__iter__()
+    @property
+    def phases(self) -> Iterator[Phase]:
+        return iter(self._inner.run)
+
+    def poll(self) -> Phase | None:
+        """A phase that already ended, or ``None`` without waiting."""
+        return self._inner.run.poll()
 
     @property
     def summary(self) -> Summary:

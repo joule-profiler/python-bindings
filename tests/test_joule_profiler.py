@@ -62,7 +62,7 @@ def test_a_program_measures_itself() -> None:
         sum(range(100_000))
         joule_profiler.phase("solve")
 
-    assert names(session) == ["START -> load", "load -> solve", "solve -> END"]
+    assert names(session.phases) == ["START -> load", "load -> solve", "solve -> END"]
     assert session.summary.exit_code == 0
 
 
@@ -70,14 +70,14 @@ def test_a_deferred_session_measures_the_same_phases() -> None:
     with JouleProfiler("procfs", defer=True).session() as session:
         session.phase("only")
 
-    assert names(session) == ["START -> only", "only -> END"]
+    assert names(session.phases) == ["START -> only", "only -> END"]
 
 
 def test_the_phases_of_a_session_come_as_they_end() -> None:
     seen: list[str] = []
 
     def read(session: joule_profiler.Session) -> None:
-        for phase in session:
+        for phase in session.phases:
             seen.append(phase.name)
 
     with JouleProfiler("procfs").session() as session:
@@ -94,6 +94,21 @@ def test_the_phases_of_a_session_come_as_they_end() -> None:
     assert seen == ["START -> a", "a -> b", "b -> END"]
 
 
+def test_a_session_gives_the_phases_already_ended_without_waiting() -> None:
+    with JouleProfiler("procfs").session() as session:
+        assert session.poll() is None, "no phase has ended yet"
+        session.phase("a")
+        deadline = time.monotonic() + 5
+        polled = session.poll()
+        while polled is None and time.monotonic() < deadline:
+            time.sleep(0.01)
+            polled = session.poll()
+        assert polled is not None and polled.name == "START -> a"
+        assert session.poll() is None, "the phase a has not ended yet"
+
+    assert names(iter(session.poll, None)) == ["a -> END"]
+
+
 def test_a_block_that_raises_still_ends_its_session() -> None:
     profiler = JouleProfiler("procfs")
 
@@ -102,7 +117,7 @@ def test_a_block_that_raises_still_ends_its_session() -> None:
         raise ValueError
 
     assert session.summary.exit_code == 1
-    assert names(session) == ["START -> broken", "broken -> END"]
+    assert names(session.phases) == ["START -> broken", "broken -> END"]
 
 
 def test_a_program_is_measured_by_one_session_at_a_time() -> None:
@@ -203,7 +218,7 @@ def _phase_from_a_child(queue: multiprocessing.Queue[str]) -> None:
 def _measure_in_a_child(queue: multiprocessing.Queue[list[str]]) -> None:
     with JouleProfiler("procfs").session() as session:
         session.phase("child")
-    queue.put(names(session))
+    queue.put(names(session.phases))
 
 
 def test_a_forked_child_measures_itself() -> None:
@@ -228,4 +243,4 @@ def test_a_forked_child_cannot_take_phases_of_the_session() -> None:
         session.phase("mine")
 
     assert "process that started it" in queue.get(timeout=5)
-    assert names(session) == ["START -> mine", "mine -> END"]
+    assert names(session.phases) == ["START -> mine", "mine -> END"]

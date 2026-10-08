@@ -1,7 +1,7 @@
 mod config;
 mod error;
-mod stream;
 mod ipc;
+mod stream;
 
 use pyo3::prelude::*;
 
@@ -9,7 +9,7 @@ use pyo3::prelude::*;
 mod _core {
     use std::path::PathBuf;
     use std::process::Command;
-    use std::sync::{Mutex, MutexGuard, PoisonError, mpsc};
+    use std::sync::{Mutex, MutexGuard, PoisonError, TryLockError, mpsc};
     use std::thread;
 
     use joule_profiler_core::metric::MetricValue;
@@ -19,12 +19,12 @@ mod _core {
     use pyo3::types::PyTuple;
     use toml::Value;
 
-    use crate::config::{Config, Settings};
+    use crate::config::{Config, ConfigTable};
     use crate::error::{Error, Result};
-use crate::ipc::PhaseValues;
-use crate::ipc::profiler::serve_spawned;
-use crate::ipc::program::IpcSession;
-use crate::stream::{Stream, ToPython};
+    use crate::ipc::PhaseValues;
+    use crate::ipc::profiler::serve_spawned;
+    use crate::ipc::program::IpcSession;
+    use crate::stream::{Stream, ToPython};
 
     #[pyclass(frozen, name = "_Profiler", module = "joule_profiler._core")]
     struct Profiler {
@@ -36,7 +36,8 @@ use crate::stream::{Stream, ToPython};
     impl Profiler {
         #[new]
         fn new(sources: Vec<String>, config: Option<PathBuf>, values: &str) -> PyResult<Self> {
-            let config = settings(config, values).and_then(|settings| settings.resolve())?;
+            let config =
+                config_table(config, values).and_then(|config_table| config_table.resolve())?;
             config.check_sources(&sources)?;
 
             Ok(Self { config, sources })
@@ -94,7 +95,7 @@ use crate::stream::{Stream, ToPython};
             let opened = py.detach(|| -> Result<_> {
                 let mut profiler = self.config.profiler(&self.sources)?;
                 let pattern = token_pattern.unwrap_or(&injector.token_pattern);
-                
+
                 profiler.set_injector(
                     StdoutInjector::new(command, pattern)?
                         .use_root(use_root.unwrap_or(injector.use_root))
@@ -109,7 +110,7 @@ use crate::stream::{Stream, ToPython};
                     }
                 });
 
-                Stream::open(received.into_iter())
+                Stream::open(received)
             })?;
 
             Ok(Run::new(opened))
@@ -125,7 +126,7 @@ use crate::stream::{Stream, ToPython};
 
             let (control, opened) = py.detach(|| -> Result<_> {
                 let (control, results) = IpcSession::spawn(command, &config)?;
-                let opened = Stream::open(results.map(|result| result.map_err(Error::from)))?;
+                let opened = Stream::open(results)?;
                 Ok((control, opened))
             })?;
 
@@ -149,16 +150,16 @@ use crate::stream::{Stream, ToPython};
         Ok(())
     }
 
-    fn settings(file: Option<PathBuf>, values: &str) -> Result<Settings> {
-        let mut settings = match file {
-            Some(path) => Settings::read(&path)?,
-            None => Settings::default(),
+    fn config_table(file: Option<PathBuf>, values: &str) -> Result<ConfigTable> {
+        let mut config_table = match file {
+            Some(path) => ConfigTable::read(&path)?,
+            None => ConfigTable::default(),
         };
         let values: Vec<(String, Value)> = serde_json::from_str(values).map_err(Error::Values)?;
         for (key, value) in values {
-            settings.set(&key, value)?;
+            config_table.set(&key, value)?;
         }
-        Ok(settings)
+        Ok(config_table)
     }
 
     #[pyclass(frozen, name = "Run", module = "joule_profiler")]
@@ -179,6 +180,12 @@ use crate::stream::{Stream, ToPython};
         fn stream(&self) -> MutexGuard<'_, Stream> {
             self.stream.lock().unwrap_or_else(PoisonError::into_inner)
         }
+
+        fn phase(&self, py: Python<'_>, phase: Option<PhaseValues>) -> PyResult<Option<Phase>> {
+            phase
+                .map(|phase| Phase::new(py, &self.schema, phase))
+                .transpose()
+        }
     }
 
     #[pymethods]
@@ -189,9 +196,17 @@ use crate::stream::{Stream, ToPython};
 
         fn __next__(&self, py: Python<'_>) -> PyResult<Option<Phase>> {
             let phase = py.detach(|| self.stream().next_phase())?;
-            phase
-                .map(|phase| Phase::new(py, &self.schema, phase))
-                .transpose()
+            self.phase(py, phase)
+        }
+
+        /// A phase that already ended, or `None` without waiting.
+        fn poll(&self, py: Python<'_>) -> PyResult<Option<Phase>> {
+            let phase = match self.stream.try_lock() {
+                Ok(mut stream) => stream.try_next_phase()?,
+                Err(TryLockError::Poisoned(poisoned)) => poisoned.into_inner().try_next_phase()?,
+                Err(TryLockError::WouldBlock) => None,
+            };
+            self.phase(py, phase)
         }
 
         #[getter]

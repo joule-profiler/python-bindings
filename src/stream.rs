@@ -1,12 +1,13 @@
 use std::collections::VecDeque;
 use std::convert::Infallible;
-use std::sync::mpsc::Sender;
+use std::sync::mpsc::{Receiver, Sender, TryRecvError};
 
 use joule_profiler_core::exporter::Exporter;
 use joule_profiler_core::phase::{PhaseInfo, SourceMetrics, Summary};
 use joule_profiler_core::schema::Schema;
 
 use crate::error::{Error, Result};
+use crate::ipc::program::Results;
 use crate::ipc::{IpcError, PhaseValues, Received};
 
 pub type Sent = Result<Received>;
@@ -46,17 +47,49 @@ impl Exporter for ToPython {
     }
 }
 
+/// Where a stream reads the results of a run.
+pub trait Source: Send {
+    /// Waits for the next result: `None` once there are no more.
+    fn receive(&mut self) -> Option<Sent>;
+
+    /// The next result if it already arrived, without waiting.
+    fn try_receive(&mut self) -> std::result::Result<Sent, TryRecvError>;
+}
+
+/// From a profiler running on a thread of this process.
+impl Source for Receiver<Sent> {
+    fn receive(&mut self) -> Option<Sent> {
+        self.recv().ok()
+    }
+
+    fn try_receive(&mut self) -> std::result::Result<Sent, TryRecvError> {
+        self.try_recv()
+    }
+}
+
+/// From a profiler running in another process.
+impl Source for Results {
+    fn receive(&mut self) -> Option<Sent> {
+        self.next().map(|result| result.map_err(Error::from))
+    }
+
+    fn try_receive(&mut self) -> std::result::Result<Sent, TryRecvError> {
+        if !self.ready() {
+            return Err(TryRecvError::Empty);
+        }
+        self.receive().ok_or(TryRecvError::Disconnected)
+    }
+}
+
 /// Phases read by `summary` stay queued until taken.
 pub struct Stream {
-    results: Box<dyn Iterator<Item = Result<Received>> + Send>,
+    results: Box<dyn Source>,
     phases: VecDeque<PhaseValues>,
     summary: Option<Summary>,
 }
 
 impl Stream {
-    pub fn open(
-        results: impl Iterator<Item = Result<Received>> + Send + 'static,
-    ) -> Result<(Schema, Self)> {
+    pub fn open(results: impl Source + 'static) -> Result<(Schema, Self)> {
         let mut stream = Self {
             results: Box::new(results),
             phases: VecDeque::new(),
@@ -75,6 +108,18 @@ impl Stream {
         Ok(self.phases.pop_front())
     }
 
+    /// Like `next_phase`, but `None` at once if no phase has arrived yet.
+    pub fn try_next_phase(&mut self) -> Result<Option<PhaseValues>> {
+        while self.phases.is_empty() && self.summary.is_none() {
+            match self.results.try_receive() {
+                Ok(sent) => self.store(sent?)?,
+                Err(TryRecvError::Empty) => break,
+                Err(TryRecvError::Disconnected) => return Err(Error::Stopped),
+            }
+        }
+        Ok(self.phases.pop_front())
+    }
+
     pub fn summary(&mut self) -> Result<Summary> {
         loop {
             if let Some(summary) = self.summary {
@@ -85,7 +130,12 @@ impl Stream {
     }
 
     fn read(&mut self) -> Result<()> {
-        match self.next()? {
+        let received = self.next()?;
+        self.store(received)
+    }
+
+    fn store(&mut self, received: Received) -> Result<()> {
+        match received {
             Received::Phase(phase) => self.phases.push_back(phase),
             Received::Summary(summary) => self.summary = Some(summary),
             Received::Schema(_) => return Err(IpcError::Protocol.into()),
@@ -94,12 +144,14 @@ impl Stream {
     }
 
     fn next(&mut self) -> Result<Received> {
-        self.results.next().unwrap_or(Err(Error::Stopped))
+        self.results.receive().unwrap_or(Err(Error::Stopped))
     }
 }
 
 #[cfg(test)]
 mod tests {
+    use std::sync::mpsc;
+
     use joule_profiler_core::error::Error as ProfilerError;
     use joule_profiler_core::metric::MetricValue;
 
@@ -120,8 +172,13 @@ mod tests {
         }
     }
 
+    /// The channel is closed once the items are sent, like a profiler that stopped.
     fn open(items: Vec<Sent>) -> Result<(Schema, Stream)> {
-        Stream::open(items.into_iter())
+        let (sender, results) = mpsc::channel();
+        for item in items {
+            sender.send(item).unwrap();
+        }
+        Stream::open(results)
     }
 
     #[test]
@@ -153,6 +210,43 @@ mod tests {
 
         assert_eq!(stream.next_phase().unwrap(), Some(phase(0)));
         assert_eq!(stream.next_phase().unwrap(), None);
+    }
+
+    #[test]
+    fn a_phase_not_arrived_yet_is_not_waited_for() {
+        let (sender, results) = mpsc::channel();
+        sender
+            .send(Ok(Received::Schema(Schema::default())))
+            .unwrap();
+        let (_, mut stream) = Stream::open(results).unwrap();
+
+        assert_eq!(stream.try_next_phase().unwrap(), None);
+        sender.send(Ok(Received::Phase(phase(0)))).unwrap();
+        assert_eq!(stream.try_next_phase().unwrap(), Some(phase(0)));
+        assert_eq!(stream.try_next_phase().unwrap(), None);
+    }
+
+    #[test]
+    fn the_phases_taken_without_waiting_end_with_the_run() {
+        let (_, mut stream) = open(vec![
+            Ok(Received::Schema(Schema::default())),
+            Ok(Received::Phase(phase(0))),
+            Ok(Received::Summary(Summary::default())),
+        ])
+        .unwrap();
+
+        assert_eq!(stream.try_next_phase().unwrap(), Some(phase(0)));
+        assert_eq!(stream.try_next_phase().unwrap(), None);
+        assert_eq!(stream.summary().unwrap(), Summary::default());
+    }
+
+    #[test]
+    fn a_profiler_that_stops_without_a_summary_is_not_waited_for() {
+        let (_, mut stream) = open(vec![Ok(Received::Schema(Schema::default()))]).unwrap();
+
+        let stopped = stream.try_next_phase();
+
+        assert!(matches!(stopped, Err(Error::Stopped)));
     }
 
     #[test]

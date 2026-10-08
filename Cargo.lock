@@ -361,7 +361,7 @@ checksum = "8f42a60cbdf9a97f5d2305f08a87dc4e09308d1276d28c869c684d7777685682"
 [[package]]
 name = "joule-profiler-core"
 version = "2.0.0"
-source = "git+https://github.com/joule-profiler/joule-profiler.git?rev=64bae243aa5d649e8aabf80abd1f54d4f8285dcc#64bae243aa5d649e8aabf80abd1f54d4f8285dcc"
+source = "git+https://github.com/joule-profiler/joule-profiler.git?rev=0a912365aa9abe3ffea31420888aa359bdaf3bf9#0a912365aa9abe3ffea31420888aa359bdaf3bf9"
 dependencies = [
  "libc",
  "log",
@@ -373,7 +373,7 @@ dependencies = [
 [[package]]
 name = "joule-profiler-injector-stdout"
 version = "0.1.0"
-source = "git+https://github.com/joule-profiler/joule-profiler.git?rev=64bae243aa5d649e8aabf80abd1f54d4f8285dcc#64bae243aa5d649e8aabf80abd1f54d4f8285dcc"
+source = "git+https://github.com/joule-profiler/joule-profiler.git?rev=0a912365aa9abe3ffea31420888aa359bdaf3bf9#0a912365aa9abe3ffea31420888aa359bdaf3bf9"
 dependencies = [
  "joule-profiler-core",
  "libc",
@@ -406,7 +406,7 @@ dependencies = [
 [[package]]
 name = "joule-profiler-source-amdsmi"
 version = "0.1.0"
-source = "git+https://github.com/joule-profiler/joule-profiler.git?rev=64bae243aa5d649e8aabf80abd1f54d4f8285dcc#64bae243aa5d649e8aabf80abd1f54d4f8285dcc"
+source = "git+https://github.com/joule-profiler/joule-profiler.git?rev=0a912365aa9abe3ffea31420888aa359bdaf3bf9#0a912365aa9abe3ffea31420888aa359bdaf3bf9"
 dependencies = [
  "amdsmi",
  "bitflags",
@@ -420,7 +420,7 @@ dependencies = [
 [[package]]
 name = "joule-profiler-source-cgroup"
 version = "0.1.0"
-source = "git+https://github.com/joule-profiler/joule-profiler.git?rev=64bae243aa5d649e8aabf80abd1f54d4f8285dcc#64bae243aa5d649e8aabf80abd1f54d4f8285dcc"
+source = "git+https://github.com/joule-profiler/joule-profiler.git?rev=0a912365aa9abe3ffea31420888aa359bdaf3bf9#0a912365aa9abe3ffea31420888aa359bdaf3bf9"
 dependencies = [
  "humantime-serde",
  "joule-profiler-core",
@@ -432,7 +432,7 @@ dependencies = [
 [[package]]
 name = "joule-profiler-source-nvml"
 version = "1.0.2"
-source = "git+https://github.com/joule-profiler/joule-profiler.git?rev=64bae243aa5d649e8aabf80abd1f54d4f8285dcc#64bae243aa5d649e8aabf80abd1f54d4f8285dcc"
+source = "git+https://github.com/joule-profiler/joule-profiler.git?rev=0a912365aa9abe3ffea31420888aa359bdaf3bf9#0a912365aa9abe3ffea31420888aa359bdaf3bf9"
 dependencies = [
  "bitflags",
  "humantime-serde",
@@ -446,7 +446,7 @@ dependencies = [
 [[package]]
 name = "joule-profiler-source-perf_event"
 version = "1.0.2"
-source = "git+https://github.com/joule-profiler/joule-profiler.git?rev=64bae243aa5d649e8aabf80abd1f54d4f8285dcc#64bae243aa5d649e8aabf80abd1f54d4f8285dcc"
+source = "git+https://github.com/joule-profiler/joule-profiler.git?rev=0a912365aa9abe3ffea31420888aa359bdaf3bf9#0a912365aa9abe3ffea31420888aa359bdaf3bf9"
 dependencies = [
  "joule-profiler-core",
  "log",
@@ -459,7 +459,7 @@ dependencies = [
 [[package]]
 name = "joule-profiler-source-procfs"
 version = "0.1.0"
-source = "git+https://github.com/joule-profiler/joule-profiler.git?rev=64bae243aa5d649e8aabf80abd1f54d4f8285dcc#64bae243aa5d649e8aabf80abd1f54d4f8285dcc"
+source = "git+https://github.com/joule-profiler/joule-profiler.git?rev=0a912365aa9abe3ffea31420888aa359bdaf3bf9#0a912365aa9abe3ffea31420888aa359bdaf3bf9"
 dependencies = [
  "humantime-serde",
  "joule-profiler-core",
@@ -472,7 +472,7 @@ dependencies = [
 [[package]]
 name = "joule-profiler-source-rapl"
 version = "1.0.4"
-source = "git+https://github.com/joule-profiler/joule-profiler.git?rev=64bae243aa5d649e8aabf80abd1f54d4f8285dcc#64bae243aa5d649e8aabf80abd1f54d4f8285dcc"
+source = "git+https://github.com/joule-profiler/joule-profiler.git?rev=0a912365aa9abe3ffea31420888aa359bdaf3bf9#0a912365aa9abe3ffea31420888aa359bdaf3bf9"
 dependencies = [
  "joule-profiler-core",
  "log",

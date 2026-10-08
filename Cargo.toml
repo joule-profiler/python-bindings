@@ -11,14 +11,14 @@ crate-type = ["cdylib"]
 [dependencies]
 pyo3 = "0.29.2"
 toml = "1.1.2"
-joule-profiler-source-rapl = { git = "https://github.com/joule-profiler/joule-profiler.git", rev = "64bae243aa5d649e8aabf80abd1f54d4f8285dcc" }
-joule-profiler-source-procfs = { git = "https://github.com/joule-profiler/joule-profiler.git", rev = "64bae243aa5d649e8aabf80abd1f54d4f8285dcc" }
-joule-profiler-source-perf_event = { git = "https://github.com/joule-profiler/joule-profiler.git", rev = "64bae243aa5d649e8aabf80abd1f54d4f8285dcc" }
-joule-profiler-source-nvml = { git = "https://github.com/joule-profiler/joule-profiler.git", rev = "64bae243aa5d649e8aabf80abd1f54d4f8285dcc" }
-joule-profiler-source-cgroup = { git = "https://github.com/joule-profiler/joule-profiler.git", rev = "64bae243aa5d649e8aabf80abd1f54d4f8285dcc" }
-joule-profiler-source-amdsmi = { git = "https://github.com/joule-profiler/joule-profiler.git", rev = "64bae243aa5d649e8aabf80abd1f54d4f8285dcc" }
-joule-profiler-injector-stdout = { git = "https://github.com/joule-profiler/joule-profiler.git", rev = "64bae243aa5d649e8aabf80abd1f54d4f8285dcc" }
-joule-profiler-core = { git = "https://github.com/joule-profiler/joule-profiler.git", rev = "64bae243aa5d649e8aabf80abd1f54d4f8285dcc" }
+joule-profiler-source-rapl = { git = "https://github.com/joule-profiler/joule-profiler.git", rev = "0a912365aa9abe3ffea31420888aa359bdaf3bf9" }
+joule-profiler-source-procfs = { git = "https://github.com/joule-profiler/joule-profiler.git", rev = "0a912365aa9abe3ffea31420888aa359bdaf3bf9" }
+joule-profiler-source-perf_event = { git = "https://github.com/joule-profiler/joule-profiler.git", rev = "0a912365aa9abe3ffea31420888aa359bdaf3bf9" }
+joule-profiler-source-nvml = { git = "https://github.com/joule-profiler/joule-profiler.git", rev = "0a912365aa9abe3ffea31420888aa359bdaf3bf9" }
+joule-profiler-source-cgroup = { git = "https://github.com/joule-profiler/joule-profiler.git", rev = "0a912365aa9abe3ffea31420888aa359bdaf3bf9" }
+joule-profiler-source-amdsmi = { git = "https://github.com/joule-profiler/joule-profiler.git", rev = "0a912365aa9abe3ffea31420888aa359bdaf3bf9" }
+joule-profiler-injector-stdout = { git = "https://github.com/joule-profiler/joule-profiler.git", rev = "0a912365aa9abe3ffea31420888aa359bdaf3bf9" }
+joule-profiler-core = { git = "https://github.com/joule-profiler/joule-profiler.git", rev = "0a912365aa9abe3ffea31420888aa359bdaf3bf9" }
 serde = "1.0.229"
 serde_json = "1.0.151"
 log = { version = "0.4.34", features = ["release_max_level_off"]}

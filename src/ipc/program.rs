@@ -1,9 +1,9 @@
-use std::io::{self, BufRead, BufReader, Read as _, Write};
-use std::os::fd::OwnedFd;
+use std::io::{self, BufRead, BufReader, PipeReader, Read as _, Write};
+use std::os::fd::{AsRawFd, OwnedFd};
 use std::os::unix::net::UnixStream;
 use std::process::{Child, Command};
 
-use crate::ipc::{PHASE_DECLARATION_MESSAGE, IpcError, Read, Received, Request, STARTED_MESSAGE};
+use crate::ipc::{IpcError, PHASE_DECLARATION_MESSAGE, Read, Received, Request, STARTED_MESSAGE};
 
 /// The program's end of a session.
 pub struct IpcSession {
@@ -16,9 +16,7 @@ impl IpcSession {
     pub fn spawn(mut command: Command, config: &str) -> Result<(Self, Results), IpcError> {
         let (control, theirs) = UnixStream::pair()?;
         let (results, written) = io::pipe()?;
-        command
-            .stdin(OwnedFd::from(theirs))
-            .stdout(written);
+        command.stdin(OwnedFd::from(theirs)).stdout(written);
         let mut spawned = command.spawn()?;
 
         drop(command);
@@ -42,7 +40,7 @@ impl IpcSession {
     #[cfg(test)]
     pub(crate) fn connect(
         control: UnixStream,
-        results: impl BufRead + Send + 'static,
+        results: BufReader<PipeReader>,
     ) -> Result<(Self, Results), IpcError> {
         let mut session = Self { control };
         let mut results = Results::new(results);
@@ -81,15 +79,15 @@ impl IpcSession {
 
 /// The schema, the phases, then the summary or an error.
 pub struct Results {
-    reader: Box<dyn BufRead + Send>,
+    reader: BufReader<PipeReader>,
     line: String,
     over: bool,
 }
 
 impl Results {
-    fn new(reader: impl BufRead + Send + 'static) -> Self {
+    fn new(reader: BufReader<PipeReader>) -> Self {
         Self {
-            reader: Box::new(reader),
+            reader,
             line: String::new(),
             over: false,
         }
@@ -97,6 +95,13 @@ impl Results {
 
     pub fn failure(&mut self) -> IpcError {
         self.find_map(Result::err).unwrap_or(IpcError::Closed)
+    }
+
+    /// Whether `next` returns without waiting for the profiler. A line read but not taken yet
+    /// stays in the buffer of the reader, not in the pipe. A line partly in the pipe is read
+    /// whole: the profiler is writing its end.
+    pub fn ready(&self) -> bool {
+        self.over || !self.reader.buffer().is_empty() || readable(self.reader.get_ref())
     }
 }
 
@@ -136,13 +141,61 @@ impl Iterator for Results {
     }
 }
 
-/// Wait for the child to finish, if the error is ECHILD, 
-/// then the child has already been reaped and the profiler is detached. 
+/// Whether reading `pipe` returns at once: it holds data, or its writer is closed.
+fn readable(pipe: &PipeReader) -> bool {
+    let mut request = libc::pollfd {
+        fd: pipe.as_raw_fd(),
+        events: libc::POLLIN,
+        revents: 0,
+    };
+    // SAFETY: `request` is one valid `pollfd`, and a timeout of 0 never waits.
+    unsafe { libc::poll(&raw mut request, 1, 0) > 0 }
+}
+
+/// Wait for the child to finish, if the error is ECHILD,
+/// then the child has already been reaped and the profiler is detached.
 fn wait(spawned: &mut Child) -> Result<(), IpcError> {
     match spawned.wait() {
         Ok(status) if status.success() => Ok(()),
         Ok(status) => Err(IpcError::Spawned(status)),
         Err(error) if error.raw_os_error() == Some(libc::ECHILD) => Ok(()),
         Err(error) => Err(error.into()),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use joule_profiler_core::exporter::Exporter;
+    use joule_profiler_core::phase::Summary;
+    use joule_profiler_core::schema::Schema;
+
+    use super::*;
+    use crate::ipc::profiler::ResultsWriter;
+
+    #[test]
+    fn only_the_results_already_written_are_ready() {
+        let (pipe, written) = io::pipe().unwrap();
+        let mut results = Results::new(BufReader::new(pipe));
+        let mut writer = ResultsWriter::new(written);
+
+        assert!(!results.ready(), "nothing is written yet");
+        writer.begin(&Schema::default()).unwrap();
+        writer.finish(&Summary::default()).unwrap();
+
+        assert!(results.ready());
+        results.next();
+        assert!(results.ready(), "the summary came with the schema");
+        results.next();
+        assert!(results.ready(), "the results are over");
+    }
+
+    #[test]
+    fn a_profiler_that_stopped_is_not_waited_for() {
+        let (pipe, written) = io::pipe().unwrap();
+        let results = Results::new(BufReader::new(pipe));
+
+        drop(written);
+
+        assert!(results.ready());
     }
 }
