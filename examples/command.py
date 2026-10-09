@@ -1,5 +1,3 @@
-"""Profiles a command whose phases start at the tokens it prints."""
-
 import sys
 
 from joule_profiler import JouleProfiler

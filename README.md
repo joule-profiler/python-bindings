@@ -35,6 +35,7 @@ cargo test
 ```bash
 python3 examples/command.py
 python3 examples/session.py
+python3 examples/info.py
 ```
 
 ## Examples
@@ -117,3 +118,27 @@ if __name__ == "__main__":
     print(session.summary)
 ```
 
+### Reading the info about sources: `examples/info.py`
+
+`info()` describes the machine and each source, `list_sensors()` lists the metrics of each source with their unit.
+
+```python
+from joule_profiler import JouleProfiler
+
+if __name__ == "__main__":
+    profiler = JouleProfiler(
+        ["rapl", "perf", "procfs", "nvml"], define={"sources.nvml.ignore_on_failure": True}
+    )
+
+    for section, info in profiler.info().items():
+        print(f"\n[{section}]")
+        for key, value in info.items():
+            if isinstance(value, list):
+                value = ", ".join(value)
+            print(f"  {key:<22} {value}")
+
+    for source, metrics in profiler.list_sensors().items():
+        print(f"\n{source} ({len(metrics)} metrics)")
+        for name, unit in metrics.items():
+            print(f"  {name:<30} {unit}")
+```
