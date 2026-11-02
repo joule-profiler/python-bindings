@@ -170,10 +170,10 @@ def test_a_table_that_does_not_describe_its_source_is_reported() -> None:
 
 def test_the_configuration_is_read_as_the_command_line_reads_it(tmp_path: Path) -> None:
     config = tmp_path / "joule-profiler.toml"
-    config.write_text('[sources.procfs]\nglobal = false\n[injector]\ntoken_pattern = "never"\n')
+    config.write_text('[sources.procfs]\nglobal = false\n[injector]\ntoken-pattern = "never"\n')
     profiler = JouleProfiler(
         config=config,
-        define={"sources.procfs.global": True, "injector.token_pattern": "STEP [a-z]+"},
+        define={"sources.procfs.global": True, "injector.token-pattern": "STEP [a-z]+"},
     )
     command = [sys.executable, "-c", "print('STEP one', flush=True)"]
 
