@@ -12,7 +12,7 @@ def solve(numbers: list[int]) -> int:
 
 if __name__ == "__main__":
     profiler = JouleProfiler(
-        ["rapl", "perf", "procfs", "nvml"], define={"sources.procfs.poll_interval": "100ms", "sources.nvml.ignore_on_failure": True}
+        ["rapl", "perf", "procfs", "nvml"], define={"sources.procfs.process_poll_interval": "100ms", "sources.nvml.ignore_on_failure": True}
     )
 
     with profiler.session() as session:

@@ -12,14 +12,13 @@ mod _core {
     use std::sync::{Mutex, MutexGuard, PoisonError, TryLockError, mpsc};
     use std::thread;
 
-    use joule_profiler_core::metric::MetricValue;
-    use joule_profiler_core::schema::Schema;
-    use joule_profiler_injector_stdout::StdoutInjector;
+    use joule_profiler_config::{ConfigTable, Value};
+    use joule_profiler_core::MetricValue;
+    use joule_profiler_core::Schema;
     use pyo3::prelude::*;
     use pyo3::types::PyTuple;
-    use toml::Value;
 
-    use crate::config::{Config, ConfigTable};
+    use crate::config::Config;
     use crate::error::{Error, Result};
     use crate::ipc::PhaseValues;
     use crate::ipc::profiler::serve_spawned;
@@ -36,8 +35,9 @@ mod _core {
     impl Profiler {
         #[new]
         fn new(sources: Vec<String>, config: Option<PathBuf>, values: &str) -> PyResult<Self> {
-            let config =
-                config_table(config, values).and_then(|config_table| config_table.resolve())?;
+            let config: Config = config_table(config, values)?
+                .deserialize()
+                .map_err(Error::from)?;
             config.check_sources(&sources)?;
 
             Ok(Self { config, sources })
@@ -91,16 +91,20 @@ mod _core {
             stdout_file: Option<PathBuf>,
             use_root: Option<bool>,
         ) -> PyResult<Run> {
-            let injector = &self.config.injector;
+            let mut injector = self.config.injector.clone();
+            if let Some(pattern) = token_pattern {
+                pattern.clone_into(&mut injector.token_pattern);
+            }
+            if let Some(use_root) = use_root {
+                injector.use_root = use_root;
+            }
+            if stdout_file.is_some() {
+                injector.stdout_file = stdout_file;
+            }
+
             let opened = py.detach(|| -> Result<_> {
                 let mut profiler = self.config.profiler(&self.sources)?;
-                let pattern = token_pattern.unwrap_or(&injector.token_pattern);
-
-                profiler.set_injector(
-                    StdoutInjector::new(command, pattern)?
-                        .use_root(use_root.unwrap_or(injector.use_root))
-                        .output_file(stdout_file.or_else(|| injector.stdout_file.clone())),
-                );
+                profiler.set_injector(injector.build(command)?);
 
                 let (sender, received) = mpsc::channel();
                 profiler.set_exporter(ToPython::new(sender.clone()));
@@ -213,8 +217,8 @@ mod _core {
         fn summary(&self, py: Python<'_>) -> PyResult<Summary> {
             let summary = py.detach(|| self.stream().summary())?;
             Ok(Summary {
-                timestamp_us: summary.timestamp_us,
-                duration_ms: summary.duration_ms,
+                timestamp_us: summary.timestamp,
+                duration_ms: summary.duration_us / 1000,
                 phases: summary.phases,
                 exit_code: summary.exit_code,
             })
@@ -341,8 +345,8 @@ mod _core {
                 end_token: info.end_token,
                 start_line: info.start_line,
                 end_line: info.end_line,
-                timestamp_us: info.timestamp_us,
-                duration_ms: info.duration_ms,
+                timestamp_us: info.timestamp,
+                duration_ms: info.duration_us / 1000,
                 sources: PyTuple::new(py, sources)?.unbind(),
             })
         }

@@ -1,41 +1,19 @@
-use std::io;
-use std::path::PathBuf;
-
-use joule_profiler_core::error::BoxError;
+use joule_profiler_config::ConfigError;
 use pyo3::PyErr;
 use pyo3::exceptions::{PyRuntimeError, PyValueError};
 use thiserror::Error;
 
 use crate::ipc::IpcError;
 
+pub type BoxError = Box<dyn std::error::Error + Send + Sync>;
+
 #[derive(Debug, Error)]
 pub enum Error {
-    #[error("reading {0}: {1}")]
-    Read(PathBuf, io::Error),
+    #[error("values are booleans, numbers, strings, lists or dicts")]
+    Values(#[source] serde_json::Error),
 
-    #[error("parsing {0}: {1}")]
-    Parse(PathBuf, toml::de::Error),
-
-    #[error("`{0}` is not a key")]
-    Key(String),
-
-    #[error("`{0}` holds a value, not a table")]
-    NotATable(String),
-
-    #[error("values are booleans, numbers, strings, lists or dicts: {0}")]
-    Values(serde_json::Error),
-
-    #[error("invalid configuration: {0}")]
-    Config(toml::de::Error),
-
-    #[error("unknown source `{name}`, the sources are: {known}")]
-    UnknownSource { name: String, known: String },
-
-    #[error("invalid [sources.{0}] table: {1}")]
-    SourceTable(&'static str, toml::de::Error),
-
-    #[error("source `{0}` is not available: {1}")]
-    Unavailable(&'static str, BoxError),
+    #[error(transparent)]
+    Config(#[from] ConfigError),
 
     #[error("the session is over")]
     SessionOver,
@@ -47,7 +25,7 @@ pub enum Error {
     NoCommand,
 
     #[error(transparent)]
-    Profiler(#[from] joule_profiler_core::error::Error),
+    Profiler(#[from] joule_profiler_core::Error),
 
     #[error(transparent)]
     Command(#[from] joule_profiler_injector_stdout::StdoutError),
@@ -60,17 +38,20 @@ pub type Result<T, E = Error> = std::result::Result<T, E>;
 
 impl From<Error> for PyErr {
     fn from(error: Error) -> Self {
-        let message = error.to_string();
+        let message = chain(&error);
         match error {
-            Error::Read(..)
-            | Error::Parse(..)
-            | Error::Key(_)
-            | Error::NotATable(_)
-            | Error::Values(_)
-            | Error::Config(_)
-            | Error::UnknownSource { .. } => PyValueError::new_err(message),
-            Error::SourceTable(..)
-            | Error::Unavailable(..)
+            Error::Values(_)
+            | Error::Config(
+                ConfigError::Read(..)
+                | ConfigError::Parse(..)
+                | ConfigError::UnknownFormat(_)
+                | ConfigError::Definition(_)
+                | ConfigError::Key(_)
+                | ConfigError::NotATable(_)
+                | ConfigError::Invalid(_)
+                | ConfigError::UnknownSource { .. },
+            ) => PyValueError::new_err(message),
+            Error::Config(ConfigError::SourceTable(..) | ConfigError::Unavailable(..))
             | Error::SessionOver
             | Error::Stopped
             | Error::NoCommand
@@ -79,4 +60,16 @@ impl From<Error> for PyErr {
             | Error::Session(_) => PyRuntimeError::new_err(message),
         }
     }
+}
+
+/// Returns the message of an error followed by its causes, as `error: cause: cause`.
+pub(crate) fn chain(error: &dyn std::error::Error) -> String {
+    let mut message = error.to_string();
+    let mut cause = error.source();
+    while let Some(error) = cause {
+        message.push_str(": ");
+        message.push_str(&error.to_string());
+        cause = error.source();
+    }
+    message
 }

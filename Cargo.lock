@@ -48,6 +48,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "arc-swap"
+version = "1.9.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "380962b3d93b99642e50b9febf72c071e97e8b32d86eae9cf4ef582bb960ae6e"
+dependencies = [
+ "rustversion",
+]
+
+[[package]]
 name = "autocfg"
 version = "1.5.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -359,9 +368,28 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8f42a60cbdf9a97f5d2305f08a87dc4e09308d1276d28c869c684d7777685682"
 
 [[package]]
+name = "joule-profiler-config"
+version = "0.1.0"
+source = "git+https://github.com/joule-profiler/joule-profiler.git?branch=refactor%2Fv4-arch#2dc1701565691e899f0e63896119d194e115dc84"
+dependencies = [
+ "joule-profiler-core",
+ "joule-profiler-source-amdsmi",
+ "joule-profiler-source-cgroup",
+ "joule-profiler-source-nvml",
+ "joule-profiler-source-perf_event",
+ "joule-profiler-source-procfs",
+ "joule-profiler-source-rapl",
+ "log",
+ "serde",
+ "serde_json",
+ "thiserror 2.0.21",
+ "toml",
+]
+
+[[package]]
 name = "joule-profiler-core"
 version = "2.0.0"
-source = "git+https://github.com/joule-profiler/joule-profiler.git?rev=0a912365aa9abe3ffea31420888aa359bdaf3bf9#0a912365aa9abe3ffea31420888aa359bdaf3bf9"
+source = "git+https://github.com/joule-profiler/joule-profiler.git?branch=refactor%2Fv4-arch#2dc1701565691e899f0e63896119d194e115dc84"
 dependencies = [
  "libc",
  "log",
@@ -373,12 +401,13 @@ dependencies = [
 [[package]]
 name = "joule-profiler-injector-stdout"
 version = "0.1.0"
-source = "git+https://github.com/joule-profiler/joule-profiler.git?rev=0a912365aa9abe3ffea31420888aa359bdaf3bf9#0a912365aa9abe3ffea31420888aa359bdaf3bf9"
+source = "git+https://github.com/joule-profiler/joule-profiler.git?branch=refactor%2Fv4-arch#2dc1701565691e899f0e63896119d194e115dc84"
 dependencies = [
  "joule-profiler-core",
  "libc",
  "log",
  "regex",
+ "serde",
  "thiserror 2.0.21",
 ]
 
@@ -386,27 +415,21 @@ dependencies = [
 name = "joule-profiler-python"
 version = "0.0.1"
 dependencies = [
+ "joule-profiler-config",
  "joule-profiler-core",
  "joule-profiler-injector-stdout",
- "joule-profiler-source-amdsmi",
- "joule-profiler-source-cgroup",
- "joule-profiler-source-nvml",
- "joule-profiler-source-perf_event",
- "joule-profiler-source-procfs",
- "joule-profiler-source-rapl",
  "libc",
  "log",
  "pyo3",
  "serde",
  "serde_json",
  "thiserror 2.0.21",
- "toml",
 ]
 
 [[package]]
 name = "joule-profiler-source-amdsmi"
 version = "0.1.0"
-source = "git+https://github.com/joule-profiler/joule-profiler.git?rev=0a912365aa9abe3ffea31420888aa359bdaf3bf9#0a912365aa9abe3ffea31420888aa359bdaf3bf9"
+source = "git+https://github.com/joule-profiler/joule-profiler.git?branch=refactor%2Fv4-arch#2dc1701565691e899f0e63896119d194e115dc84"
 dependencies = [
  "amdsmi",
  "bitflags",
@@ -420,7 +443,7 @@ dependencies = [
 [[package]]
 name = "joule-profiler-source-cgroup"
 version = "0.1.0"
-source = "git+https://github.com/joule-profiler/joule-profiler.git?rev=0a912365aa9abe3ffea31420888aa359bdaf3bf9#0a912365aa9abe3ffea31420888aa359bdaf3bf9"
+source = "git+https://github.com/joule-profiler/joule-profiler.git?branch=refactor%2Fv4-arch#2dc1701565691e899f0e63896119d194e115dc84"
 dependencies = [
  "humantime-serde",
  "joule-profiler-core",
@@ -432,7 +455,7 @@ dependencies = [
 [[package]]
 name = "joule-profiler-source-nvml"
 version = "1.0.2"
-source = "git+https://github.com/joule-profiler/joule-profiler.git?rev=0a912365aa9abe3ffea31420888aa359bdaf3bf9#0a912365aa9abe3ffea31420888aa359bdaf3bf9"
+source = "git+https://github.com/joule-profiler/joule-profiler.git?branch=refactor%2Fv4-arch#2dc1701565691e899f0e63896119d194e115dc84"
 dependencies = [
  "bitflags",
  "humantime-serde",
@@ -446,21 +469,21 @@ dependencies = [
 [[package]]
 name = "joule-profiler-source-perf_event"
 version = "1.0.2"
-source = "git+https://github.com/joule-profiler/joule-profiler.git?rev=0a912365aa9abe3ffea31420888aa359bdaf3bf9#0a912365aa9abe3ffea31420888aa359bdaf3bf9"
+source = "git+https://github.com/joule-profiler/joule-profiler.git?branch=refactor%2Fv4-arch#2dc1701565691e899f0e63896119d194e115dc84"
 dependencies = [
  "joule-profiler-core",
  "log",
  "perf-event2",
  "serde",
- "serde_json",
  "thiserror 2.0.21",
 ]
 
 [[package]]
 name = "joule-profiler-source-procfs"
 version = "0.1.0"
-source = "git+https://github.com/joule-profiler/joule-profiler.git?rev=0a912365aa9abe3ffea31420888aa359bdaf3bf9#0a912365aa9abe3ffea31420888aa359bdaf3bf9"
+source = "git+https://github.com/joule-profiler/joule-profiler.git?branch=refactor%2Fv4-arch#2dc1701565691e899f0e63896119d194e115dc84"
 dependencies = [
+ "arc-swap",
  "humantime-serde",
  "joule-profiler-core",
  "log",
@@ -472,8 +495,9 @@ dependencies = [
 [[package]]
 name = "joule-profiler-source-rapl"
 version = "1.0.4"
-source = "git+https://github.com/joule-profiler/joule-profiler.git?rev=0a912365aa9abe3ffea31420888aa359bdaf3bf9#0a912365aa9abe3ffea31420888aa359bdaf3bf9"
+source = "git+https://github.com/joule-profiler/joule-profiler.git?branch=refactor%2Fv4-arch#2dc1701565691e899f0e63896119d194e115dc84"
 dependencies = [
+ "humantime-serde",
  "joule-profiler-core",
  "log",
  "perf-event2",

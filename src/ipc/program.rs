@@ -165,9 +165,9 @@ fn wait(spawned: &mut Child) -> Result<(), IpcError> {
 
 #[cfg(test)]
 mod tests {
-    use joule_profiler_core::exporter::Exporter;
-    use joule_profiler_core::phase::Summary;
-    use joule_profiler_core::schema::Schema;
+    use joule_profiler_core::Exporter;
+    use joule_profiler_core::Schema;
+    use joule_profiler_core::Summary;
 
     use super::*;
     use crate::ipc::profiler::ResultsWriter;

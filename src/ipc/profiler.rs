@@ -6,12 +6,12 @@ use std::os::unix::net::UnixStream;
 use std::panic::{self, AssertUnwindSafe};
 use std::sync::Arc;
 
-use joule_profiler_core::error::BoxError;
-use joule_profiler_core::exporter::Exporter;
-use joule_profiler_core::injector::{Injector, PhaseToken, StopHandle, Target};
-use joule_profiler_core::phase::{PhaseInfo, SourceMetrics, Summary};
-use joule_profiler_core::profiler::JouleProfiler;
-use joule_profiler_core::schema::Schema;
+use crate::error::BoxError;
+use joule_profiler_core::Exporter;
+use joule_profiler_core::JouleProfiler;
+use joule_profiler_core::Schema;
+use joule_profiler_core::{Injector, PhaseToken, StopHandle, Target};
+use joule_profiler_core::{PhaseInfo, SourceMetrics, Summary};
 
 use crate::ipc::{IpcError, PHASE_DECLARATION_MESSAGE, Request, STARTED_MESSAGE, Values, Written};
 
@@ -102,7 +102,7 @@ impl<W: Write> ResultsWriter<W> {
     }
 
     pub fn error(&mut self, error: &dyn std::error::Error) -> io::Result<()> {
-        self.write(&Written::Error(&error.to_string()))?;
+        self.write(&Written::Error(&crate::error::chain(error)))?;
         self.out.flush()
     }
 }
@@ -239,11 +239,11 @@ mod tests {
     use std::thread;
     use std::time::{Duration, Instant};
 
-    use joule_profiler_core::metric::{MetricInfo, MetricValue};
-    use joule_profiler_core::processor::Processor;
-    use joule_profiler_core::sensor::Sensor;
-    use joule_profiler_core::source::Source;
-    use joule_profiler_core::unit::MetricUnit;
+    use joule_profiler_core::MetricUnit;
+    use joule_profiler_core::Processor;
+    use joule_profiler_core::Sensor;
+    use joule_profiler_core::Source;
+    use joule_profiler_core::{MetricInfo, MetricValue};
 
     use crate::ipc::program::{IpcSession, Results};
     use crate::ipc::{PhaseValues, Received};

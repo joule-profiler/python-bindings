@@ -55,7 +55,7 @@ def test_the_summary_waits_for_the_end_of_the_command_and_keeps_its_phases() -> 
 
 
 def test_a_program_measures_itself() -> None:
-    profiler = JouleProfiler("procfs", define={"sources.procfs.poll_interval": "5ms"})
+    profiler = JouleProfiler("procfs", define={"sources.procfs.process_poll_interval": "5ms"})
 
     with profiler.session() as session:
         session.phase("load")
@@ -159,8 +159,6 @@ def test_a_misspelled_key_is_refused() -> None:
         JouleProfiler("procfs", define={"profiler.defr": True})
     with pytest.raises(ValueError, match="`profiler..defer`"):
         JouleProfiler("procfs", define={"profiler..defer": True})
-    with pytest.raises(ValueError, match="dicts"):
-        JouleProfiler("procfs", define={"injector.stdout_file": None})
     with pytest.raises(ValueError, match="exporter"):
         JouleProfiler("procfs", define={"exporter.format": "json"})
 
@@ -197,7 +195,7 @@ def test_the_machine_and_the_sources_are_described() -> None:
 
     assert list(info) == ["machine", "procfs"]
     assert info["procfs"]["global"] is False
-    assert info["procfs"]["poll_interval"] == "10ms"
+    assert info["procfs"]["global_poll_interval"] == "10ms"
 
 
 def test_the_sensors_are_listed() -> None:

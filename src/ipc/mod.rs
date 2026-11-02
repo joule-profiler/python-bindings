@@ -1,9 +1,9 @@
 pub mod profiler;
 pub mod program;
 
-use joule_profiler_core::metric::MetricValue;
-use joule_profiler_core::phase::{PhaseInfo, SourceMetrics, Summary};
-use joule_profiler_core::schema::Schema;
+use joule_profiler_core::MetricValue;
+use joule_profiler_core::Schema;
+use joule_profiler_core::{PhaseInfo, SourceMetrics, Summary};
 use serde::{Deserialize, Serialize, Serializer};
 use thiserror::Error;
 

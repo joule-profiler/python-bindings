@@ -2,9 +2,9 @@ use std::collections::VecDeque;
 use std::convert::Infallible;
 use std::sync::mpsc::{Receiver, Sender, TryRecvError};
 
-use joule_profiler_core::exporter::Exporter;
-use joule_profiler_core::phase::{PhaseInfo, SourceMetrics, Summary};
-use joule_profiler_core::schema::Schema;
+use joule_profiler_core::Exporter;
+use joule_profiler_core::Schema;
+use joule_profiler_core::{PhaseInfo, SourceMetrics, Summary};
 
 use crate::error::{Error, Result};
 use crate::ipc::program::Results;
@@ -152,8 +152,8 @@ impl Stream {
 mod tests {
     use std::sync::mpsc;
 
-    use joule_profiler_core::error::Error as ProfilerError;
-    use joule_profiler_core::metric::MetricValue;
+    use joule_profiler_core::Error as ProfilerError;
+    use joule_profiler_core::MetricValue;
 
     use super::*;
 
@@ -165,8 +165,8 @@ mod tests {
                 end_token: "END".to_owned(),
                 start_line: None,
                 end_line: None,
-                timestamp_us: 0,
-                duration_ms: 0,
+                timestamp: 0,
+                duration_us: 0,
             },
             values: vec![vec![MetricValue::U64(1)]],
         }
